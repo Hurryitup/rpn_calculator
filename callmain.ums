@@ -1,0 +1,19 @@
+.section init
+.temps r6, r7
+
+ustart:
+r0 := 0
+r2 := endstack
+goto main linking r1 
+halt
+
+.section main
+main:
+.temp r6, r7
+push r1 on stack r2
+
+r5 := 65
+output r5
+
+pop r1 off stack r2
+goto r1

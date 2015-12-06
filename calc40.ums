@@ -1,0 +1,22 @@
+.section init
+
+jumptable:
+	.space 256
+	
+table:
+	r4 := jumptable
+	table_loop:
+	.temps r5, r6, r7
+	m[r0][r4] := bad_input
+	r4 := r4 + 1
+	if(r4 != jumptable+256) goto table_loop
+	goto ustart
+
+#waiting:
+#	r1 := input()
+
+bad_input:
+	push r1 on stack r2
+	output "Bad input"
+	pop r1 off stack r2
+	goto r1
