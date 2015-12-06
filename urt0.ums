@@ -1,42 +1,4 @@
 
-###Initialize the stack###
-.section init
-.temps r6, r7
-.section stk
-.space 100
-endstack:
-	.section init
-	.zero r0
-
-jumptable:
-	.space 256
-	# was previously bad_input + 1
-	r3 := bad_input
-	r4 := 0
-	r5 := r3 + r4
-
-table:
-	m[r0][r5] := bad_input
-	r4 := r4 + 1
-	.temps r5, r6, r7
-	if(r4 != 255) goto table
-
-.section main
-ustart:
-r0 := 0
-r2 := endstack
-goto main linking r1 
-halt
-
-###Main###
-main:
-.temp r6, r7
-push r1 on stack r2
-push r3 on stack r2
-push r4 on stack r2
-
-r5 := 65
-output r5
 
 
 pop r4 off stack r2
@@ -49,22 +11,3 @@ goto r5
 .temps r1
 	bad_input:
 		output "BAD INPUT"
-
-
-####testing
-#.section init
-#.temps r6, r7
-#.zero r0
-#.space 100
-#endstack:
-#	goto main linking r1
-#main:
-#r2 := endstack
-#r7 := 65
-#r4 := 10
-#push r4 on stack r2
-#push r7 on stack r2
-#output m[r0][r2]
-#pop r4 off stack r2
-#output m[r0][r2]
-#halt

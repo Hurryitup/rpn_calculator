@@ -1,4 +1,5 @@
 .section init
+.temps r5, r6, r7
 
 jumptable:
 	.space 256
@@ -6,17 +7,58 @@ jumptable:
 table:
 	r4 := jumptable
 	table_loop:
-	.temps r5, r6, r7
-	m[r0][r4] := bad_input
+		
+	m[r0][r4] := input_error
 	r4 := r4 + 1
 	if(r4 != jumptable+256) goto table_loop
+	goto space_init
+
+space_init:
+	r4 := jumptable + ' '
+	m[r0][r4] := waiting
+	goto number_init
+
+number_init:
+	r4 := jumptable + '0'
+	number_init_loop:
+		m[r0][r4] := digit
+		r4 := r4 + 1
+		if(r4 != jumptable + ':') goto number_init_loop
 	goto ustart
 
-#waiting:
-#	r1 := input()
-
-bad_input:
+run:
 	push r1 on stack r2
-	output "Bad input"
+	goto waiting
+
+end:
+	pop r1 off stack r2
+	pop r3 off stack r2
+	goto r3
+
+waiting:
+	r1 := input()
+	output r1
+
+waiting_with_character:
+	if(r1 == '\n') goto end
+	# goes to corresponding instruction in the jump table
+	r4 := jumptable + r1
+	goto r4
+
+entering:
+	r1 := input()
+	if (r1 <s '0') goto waiting_with_character
+	if (r1 >s '9') goto waiting_with_character
+	push r1 on stack r2
+	goto entering
+	
+digit:
+	push r1 on stack r2
+	goto entering
+
+
+input_error:
+	push r1 on stack r2
+	output "unknown character"
 	pop r1 off stack r2
 	goto r1
