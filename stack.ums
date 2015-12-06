@@ -1,8 +1,11 @@
 ###Initialize the stack###
 .section init
 .temps r6, r7
+.zero r0
+
 .section stk
 .space 100
+
 endstack:
 	.section init
-	.zero r0
+

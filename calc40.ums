@@ -26,13 +26,16 @@ number_init:
 		if(r4 != jumptable + ':') goto number_init_loop
 	goto ustart
 
+.section main
+.zero r0
+
 run:
-	push r1 on stack r2
-	goto waiting
+	push r3 on stack r2
+	goto r3
 
 end:
 	pop r1 off stack r2
-	pop r3 off stack r2
+	#pop r3 off stack r2
 	goto r3
 
 waiting:
@@ -49,13 +52,12 @@ entering:
 	r1 := input()
 	if (r1 <s '0') goto waiting_with_character
 	if (r1 >s '9') goto waiting_with_character
-	push r1 on stack r2
 	goto entering
 	
 digit:
+	r1 := r1 - '0'
 	push r1 on stack r2
 	goto entering
-
 
 input_error:
 	push r1 on stack r2

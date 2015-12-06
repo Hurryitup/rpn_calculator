@@ -8,14 +8,15 @@ goto main linking r1
 halt
 
 .section main
+.zero r0
 main:
 .temp r6, r7
 push r1 on stack r2
 
-goto run linking r1
+goto run linking r3
 
 r5 := 10
-output r1
+#output r1
 output r5
 
 r5 := 65
