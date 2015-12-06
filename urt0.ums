@@ -10,33 +10,33 @@ endstack:
 
 jumptable:
 	.space 256
-	r3 := bad_input+1
+	# was previously bad_input + 1
+	r3 := bad_input
 	r4 := 0
 	r5 := r3 + r4
-	table:
+
+table:
 	m[r0][r5] := bad_input
 	r4 := r4 + 1
-	.temp r1, r2, r7
+	.temps r5, r6, r7
 	if(r4 != 255) goto table
 
+.section main
 ustart:
 r0 := 0
 r2 := endstack
 goto main linking r1 
 halt
 
-bad_input:
-	output "BAD INPUT"
-
 ###Main###
 main:
-
+.temp r6, r7
 push r1 on stack r2
 push r3 on stack r2
 push r4 on stack r2
 
-r6 := 65
-output r6
+r5 := 65
+output r5
 
 
 pop r4 off stack r2
@@ -44,6 +44,11 @@ pop r3 off stack r2
 pop r5 off stack r2
 r1 := 0 
 goto r5
+
+ .section bad_input
+.temps r1
+	bad_input:
+		output "BAD INPUT"
 
 
 ####testing
