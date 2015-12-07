@@ -19,11 +19,9 @@ space_init:
 
 number_init:
 	r4 := jumptable + '0'
-	output r4
 	number_init_loop:
 		m[r0][r4] := digit
 		r4 := r4 + 1
-		output "in loop"
 		if(r4 != jumptable + ':') goto number_init_loop
 	goto ustart
 

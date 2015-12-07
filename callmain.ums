@@ -17,7 +17,7 @@ main:
 	r1 := r1 + '0'
 	output r1
 
-	r5 := 66	
+	r5 := 10
 	output r5
 
 	r5 := 65
