@@ -2,28 +2,29 @@
 .temps r6, r7
 
 ustart:
-r0 := 0
-r2 := endstack
-goto main linking r1 
-halt
+	r0 := 0
+	r2 := endstack
+	goto main linking r1 
+	halt
 
 .section main
 .zero r0
 main:
-.temp r6, r7
-push r1 on stack r2
+	.temp r6, r7
+	push r1 on stack r2
+	goto run linking r3
+	
+	r1 := r1 + '0'
+	output r1
 
-goto run linking r3
+	r5 := 66	
+	output r5
 
-r5 := 10
-#output r1
-output r5
+	r5 := 65
+	output r5
+	r5 := 10
+	output r5
 
-r5 := 65
-output r5
-r5 := 10
-output r5
-
-pop r5 off stack r2
-r1 := 0
-goto r5
+	pop r5 off stack r2
+	r1 := 0
+	goto r5

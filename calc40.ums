@@ -7,10 +7,9 @@ jumptable:
 table:
 	r4 := jumptable
 	table_loop:
-		
-	m[r0][r4] := input_error
-	r4 := r4 + 1
-	if(r4 != jumptable+256) goto table_loop
+		m[r0][r4] := input_error
+		r4 := r4 + 1
+		if(r4 != jumptable+255) goto table_loop
 	goto space_init
 
 space_init:
@@ -20,33 +19,36 @@ space_init:
 
 number_init:
 	r4 := jumptable + '0'
+	output r4
 	number_init_loop:
 		m[r0][r4] := digit
 		r4 := r4 + 1
+		output "in loop"
 		if(r4 != jumptable + ':') goto number_init_loop
 	goto ustart
 
 .section main
+.temps r5, r6, r7
 .zero r0
 
 run:
 	push r3 on stack r2
-	goto r3
+	goto waiting
 
 end:
 	pop r1 off stack r2
-	#pop r3 off stack r2
+	pop r3 off stack r2
 	goto r3
 
 waiting:
 	r1 := input()
-	output r1
 
 waiting_with_character:
 	if(r1 == '\n') goto end
 	# goes to corresponding instruction in the jump table
 	r4 := jumptable + r1
-	goto r4
+	r3 := m[r0][r4]
+	goto r3
 
 entering:
 	r1 := input()
