@@ -13,7 +13,9 @@ main:
 	.temp r6, r7
 	push r1 on stack r2
 	goto run linking r3
-	
+	check1:
+	check2:
+
 	r1 := r1 + '0'
 	output r1
 

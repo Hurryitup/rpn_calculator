@@ -10,12 +10,24 @@ table:
 		m[r0][r4] := input_error
 		r4 := r4 + 1
 		if(r4 != jumptable+255) goto table_loop
-	goto space_init
 
 space_init:
 	r4 := jumptable + ' '
 	m[r0][r4] := waiting
-	goto number_init
+
+operands_init:
+	m[r0][jumptable + '*'] := multiply
+	m[r0][jumptable + '+'] := add
+	m[r0][jumptable + '-'] := subtract
+	m[r0][jumptable + '/'] := divide
+	m[r0][jumptable + '|'] := bitwise_or
+	m[r0][jumptable + '&'] := bitwise_and
+	m[r0][jumptable + 'c'] := negation
+	m[r0][jumptable + '~'] := complement
+	m[r0][jumptable + 's'] := swap
+	m[r0][jumptable + 'd'] := duplicate
+	m[r0][jumptable + 'p'] := pop_val
+	m[r0][jumptable + 'z'] := pop_all
 
 number_init:
 	r4 := jumptable + '0'
@@ -52,6 +64,7 @@ entering:
 	r1 := input()
 	if (r1 <s '0') goto waiting_with_character
 	if (r1 >s '9') goto waiting_with_character
+	if (r1 == '+') goto add
 	goto entering
 	
 digit:
@@ -64,3 +77,40 @@ input_error:
 	output "unknown character"
 	pop r1 off stack r2
 	goto r1
+
+bad_operands:
+	output "bad operands"
+	goto waiting
+
+multiply:
+
+
+add:
+	output "adding\n"
+	if (r2 == check1) goto bad_operands
+	if (r2 == check2) goto bad_operands
+	pop r3 off stack r2
+	pop r4 off stack r2
+	r3 := r3 + r4
+	push r3 on stack r2
+	goto waiting
+
+subtract:
+
+divide:
+
+bitwise_or:
+
+bitwise_and:
+
+negation:
+
+complement:
+
+swap:
+
+duplicate:
+
+pop_val:
+
+pop_all:
