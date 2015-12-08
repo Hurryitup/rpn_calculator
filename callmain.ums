@@ -1,17 +1,45 @@
+//
+//      Aditya Hurry and Aristana Scourta
+//      Project 8: RPN Calculator
+//      12/8/15
+//      callmain.ums
+//
+
+//---------------------------------------------------------------------------//
+#                                                                             #
+#                                 Main                                        #
+#                                                                             #
+//---------------------------------------------------------------------------//
+#                                                                             #
+#       Register use:                                                         #
+#               r0 is always 0                                                #
+#               r1 is initalized to point to the top of the value stack       #
+#               r2 is set to point to the call stack                          #
+#               r3 is not in use                                              #
+#               r4 is not in use                                              #
+#               r5 is not in use                                              #
+#               r6 and r7 are temporary registers                             #
+#                                                                             #
+#                                                                             #
+//---------------------------------------------------------------------------//
 .section init
 .temps r6, r7
 
+//
+// Sets the labels of the stacks, calls main
+//
 ustart:
 	r0 := 0
 	r2 := endstack
 	r1 := valuestack
-	goto main linking r3 
+	goto main 
 
+
+//
+// Runs the program.
+//
 .section main
 .zero r0
 main:
 	.temp r6, r7
-	push r3 on stack r2
 	goto run
-	check1:
-	check2:

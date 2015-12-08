@@ -1,48 +1,144 @@
+//
+//      Aditya Hurry and Aristana Scourta
+//      Project 8: RPN Calculator
+//      12/8/15
+//      printd.ums
+//
+
+//---------------------------------------------------------------------------//
+#                                                                             #
+#                         Printing valuestack                                 #
+#                                                                             #
+//---------------------------------------------------------------------------//
+#                                                                             #
+#       Register use:                                                         #
+#               r0 is always 0                                                #
+#               r1 always points to the top of the value stack                #
+#               r2 always points to the top of the call stack                 #
+#               r3 holds the current position in the value stack              #
+#               r4 holds the current value at the position designated by r3   #
+#               r5, r6, and r7 are used as temporary registers                #
+#                                                                             #
+#                                                                             #
+//---------------------------------------------------------------------------//
+
 .section print
 .temps r5, r6, r7
 
+//
+// Prints all of the values stored on the value stack. r3 serves as a
+// counter. r4 will hold the value to be printed in the label print_function.
+// The call stack pointer is moved in order to accomodate the value of r4 that
+// is pushed in print_function for printing. Once we have looped through the
+// entire value stack, we return to the waiting label.
+//
 print_stack:
 	r3 := r1
 	print_loop:
-		if (r3 == valuestack) goto waiting
+		if (r3 == valuestack) goto waiting #if equal to valuestack
+                                                   #label, at bottom
 		output ">>> "
-		goto print_function linking r4
+		goto print_function linking r4 #will push r4 onto stack
 		finish_digit:
 		output "\n"
 		pop stack r2
-		r3 := r3 + 1
+		r3 := r3 + 1  #increment in order to loop through
 		goto print_loop
 	goto waiting
 
+//
+// Determines whether the current value should be printed as a positive
+// or a negative number. The current value is assigned to r4 based on
+// its position in the value stack, which is designated by r3 from the 
+// caller (print_stack). 
+//
+// If the value in r4 is nonnegative, this calls the 
+// begin_recurse label in order to recursively print the number itself
+// (necessary for handling multidigit output) by goto'ing the recurse label
+// in order to push the lowest digit of the multidigit number onto the call
+// stack (r2). 
+//
+// The number is then truncated by one digit and the process
+// repeats itself (with a goto to begin_recurse) until the number is 
+// only one digit, at which point the label print_lsb_stack is called to
+// print the whole number. See comments below for exact register usage.
+//
 print_function:
 	push r4 on stack r2
-	r4 := m[r0][r3]
-	if (r4 <s 0) goto print_neg
+	r4 := m[r0][r3]          #r3 is the position in the value stack
+	if (r4 <s 0) goto print_neg         #special negative handling
 	begin_recurse:
 		if (r4 >s 9) goto recurse
-		r4 := r4 + '0'
+		r4 := r4 + '0'               # accomodate ASCII coding
 		output r4
 		goto print_lsb_stack 
-
+//
+// Handles the special case of negative numbers by printing out a negative
+// sign and converting the number into a positive number in order to 
+// properly print the digits by goto'ing begin_recurse. The value is always 
+// stored in r4.
+//
 print_neg:
 	output "-"
 	r4 := r4 - 1
 	r4 := r4 nand r4
 	goto begin_recurse
 
+//
+// Prints all of the digits of a number, the values of which are stored in
+// r4. Loops until the value of the call stack pointer (r2) is equal to the 
+// label finish_digit, which is the label immediately after the printing 
+// started in print_stack above.Once the value is equal to this label, 
+// the call stack has been returned to its state before we started printing
+// the current number, and thus there are no more digits to print for this 
+// particular number. 
+//
+// r4 is used as a temporary register for this condition
+// and goto because we no longer need to know the value that r4 previously
+// held. 
+//
 print_lsb_stack:
 	print_stack_loop:
 		if(m[r0][r2] == finish_digit) goto finish_digit using r4
 		pop r4 off stack r2
-		r4 := r4 + '0'
+		r4 := r4 + '0'          #accomodate ASCII coding for printing
 		output r4
 		goto print_stack_loop
 
+//---------------------------------------------------------------------------//
+#                                                                             #
+#                  Recurse through the digits of a number                     #
+#                                                                             #
+//---------------------------------------------------------------------------//
+#                                                                             #
+#       Register use:                                                         #
+#               r0 is always 0                                                #
+#               r1 always points to the top of the value stack                #
+#               r2 always points to the top of the call stack                 #
+#               r3 holds the current position in the value stack (not altered)#
+#               r4 holds the current value at the position designated by r3   #
+#                       is altered to hold the truncated value with each call #
+#               r5 holds the least significant digit of the value in r4       #
+#               r6 and r7 are used as temporary registers                     #
+#                                                                             #
+#                                                                             #
 .section recursive
 .temp r6, r7
 
+
+//
+// Called by the begin_recurse loop, this stores the least significant digit
+// of the number stored in r4 into register r5 and pushes that value onto
+// the call stack (r2) in order to later print it out in the label 
+// print_lsb_stack. The number is then divided by 10 in order to truncate
+// it by one digit; this new number is again stored in register r4 and
+// we return to the begin_recurse label.
+//
+// This label is only reached if the value in r4 is greater than 9 (so is
+// a multidigit number).
+//
 recurse:
-	r5 := r4 mod 10
+	r5 := r4 mod 10                 #extract the least significant digit
 	push r5 on stack r2
-	r4 := r4 / 10
+	r4 := r4 / 10                   #truncate the value by 1 digit
 	goto begin_recurse

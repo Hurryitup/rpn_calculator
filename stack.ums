@@ -1,11 +1,47 @@
-###Initialize the stack###
+//
+//      Aditya Hurry and Aristana Scourta
+//      Project 8: RPN Calculator
+//      12/8/15
+//      stack.ums
+//
+
+//---------------------------------------------------------------------------//
+#                                                                             #
+#                         Initializing stacks                                 #
+#                                                                             #
+//---------------------------------------------------------------------------//
+#                                                                             #
+#       Register use:                                                         #
+#               r0 is always 0                                                #
+#               r1 will be set to point to the value stack                    #
+#               r2 will be set to point to the call stack                     #
+#               r3 is not in use                                              #
+#               r4 is not in use                                              #
+#               r5 is not in use                                              #
+#               r6 and r7 are temporary registers                             #
+#                                                                             #
+#                                                                             #
+//---------------------------------------------------------------------------//
+
+//
+// Initialize the temps and set r0 to 0
+//
 .section init
 .temps r6, r7
 .zero r0
 
+//
+// Space for the call stack is set aside. The endstack label is here to denote
+// the bottom of the call stack.
+//
 .section stk
-.space 100 # call stack
+.space 100       # call stack
 endstack:
 
-.space 1000000 # value stack
+//
+// Space for the value stack is set aside. It should be able to handle 1000000
+// values at a time. The valuestack label is here to denote the bottom of the
+// value stack. 
+//
+.space 1000000          # value stack
 valuestack:
