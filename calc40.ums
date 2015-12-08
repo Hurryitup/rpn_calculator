@@ -42,57 +42,83 @@ number_init:
 .zero r0
 
 run:
-	push r3 on stack r2
 	goto waiting
 
 end:
-	pop r1 off stack r2
-	pop r3 off stack r2
-	goto r3
+	output "halting"
+	halt
+
+print_stack:
+	output "printing"
+	goto waiting
 
 waiting:
-	r1 := input()
+	r3 := input()
 
 waiting_with_character:
-	if(r1 == '\n') goto end
+	# -1 is EOF
+	if(r3 == -1) goto end
+	if(r3 == '\n') goto print_stack
 	# goes to corresponding instruction in the jump table
-	r4 := jumptable + r1
-	r3 := m[r0][r4]
-	goto r3
+	r4 := jumptable + r3
+	r4 := m[r0][r4]
+	goto r4
 
 entering:
-	r1 := input()
-	if (r1 <s '0') goto waiting_with_character
-	if (r1 >s '9') goto waiting_with_character
-	if (r1 == '+') goto add
+	r3 := input()
+	if (r3 <s '0') goto waiting_with_character
+	if (r3 >s '9') goto waiting_with_character
+	if (r3 == '+') goto add
 	goto entering
 	
 digit:
-	r1 := r1 - '0'
-	push r1 on stack r2
+	r3 := r3 - '0'
+	push r3 on stack r1
 	goto entering
 
 input_error:
-	push r1 on stack r2
-	output "unknown character"
-	pop r1 off stack r2
-	goto r1
-
-bad_operands:
-	output "bad operands"
+	output "unknown character\n"
 	goto waiting
+
+bad_operands_1:
+	output "Stack underflow---expected at least 1 element\n"
+	goto waiting
+
+bad_operands_2:
+	output "Stack underflow---expected at least 2 elements\n"
+	goto waiting
+
+# always link with r3, return value is top of callstack r2
+has:
+	push r3 on stack r2
+	# counter, starts at 1 because we know we just
+	# pushed something on the stack
+	r4 := 0
+	has_loop:
+		r3 := valuestack - r4
+		if(r3 == r1) goto return_has
+		r4 := r4 + 1
+		output "stuck in loop\n" 
+		goto has_loop
+	return_has:
+		pop r3 off stack r2
+		push r4 on stack r2 #return value
+		output "ending has\n"
+		goto r3
 
 multiply:
 
 
 add:
 	output "adding\n"
-	if (r2 == check1) goto bad_operands
-	if (r2 == check2) goto bad_operands
-	pop r3 off stack r2
+	goto has linking r3
 	pop r4 off stack r2
+	if (r4 == 1) goto bad_operands_2
+	output "past check\n"
+	pop r3 off stack r1
+	pop r4 off stack r1
 	r3 := r3 + r4
-	push r3 on stack r2
+	push r3 on stack r1
 	goto waiting
 
 subtract:

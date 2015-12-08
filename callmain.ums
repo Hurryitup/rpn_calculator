@@ -4,29 +4,14 @@
 ustart:
 	r0 := 0
 	r2 := endstack
-	goto main linking r1 
-	halt
+	r1 := valuestack
+	goto main linking r3 
 
 .section main
 .zero r0
 main:
 	.temp r6, r7
-	push r1 on stack r2
-	goto run linking r3
+	push r3 on stack r2
+	goto run
 	check1:
 	check2:
-
-	r1 := r1 + '0'
-	output r1
-
-	r5 := 10
-	output r5
-
-	r5 := 65
-	output r5
-	r5 := 10
-	output r5
-
-	pop r5 off stack r2
-	r1 := 0
-	goto r5

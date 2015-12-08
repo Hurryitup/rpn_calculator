@@ -4,8 +4,8 @@
 .zero r0
 
 .section stk
-.space 100
-
+.space 100 # call stack
 endstack:
-	.section init
 
+.space 1000000 # value stack
+valuestack:
