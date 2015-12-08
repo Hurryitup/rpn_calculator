@@ -1,9 +1,15 @@
 .section init
 .temps r5, r6, r7
 
+//---------------------------------------------------------------------------//
+#									      #
+#			Jump table initialization			      #
+#									      #
+//---------------------------------------------------------------------------//
+
 jumptable:
 	.space 256
-	
+
 table:
 	r4 := jumptable
 	table_loop:
@@ -37,6 +43,12 @@ number_init:
 		if(r4 != jumptable + ':') goto number_init_loop
 	goto ustart
 
+//---------------------------------------------------------------------------//
+#									      #
+#				Input handling				      #
+#									      #
+//---------------------------------------------------------------------------//
+
 .section main
 .temps r5, r6, r7
 .zero r0
@@ -67,6 +79,11 @@ entering:
 	if (r3 == '*') goto multiply
 	if (r3 == '|') goto bitwise_or
 	if (r3 == 'c') goto negation
+	if (r3 == 's') goto swap
+	if (r3 == '~') goto complement
+	if (r3 == 'd') goto duplicate
+	if (r3 == 'p') goto pop_val
+	if (r3 == 'z') goto pop_all
 	if (r3 == '&') goto bitwise_and
 	if (r3 == '0') goto multi_digit
 	if (r3 == '1') goto multi_digit
@@ -96,8 +113,26 @@ multi_digit:
 	goto entering
 
 input_error:
-	output "unknown character\n"
+	output "Unknown character '"
+	output r3
+	output "'\n"
 	goto waiting
+
+//---------------------------------------------------------------------------//
+#									      #
+#		   Math functions and related error handling		      #
+#									      #
+//---------------------------------------------------------------------------//
+#
+#	Register use:
+#		For the 'has' label, r4 holds the return value
+#		For binary operators, r3 and r4 hold the operands
+#		For unary operators, r3 holds the operand
+#	
+#
+//---------------------------------------------------------------------------//
+
+
 
 bad_operands_1:
 	output "Stack underflow---expected at least 1 element\n"
@@ -107,11 +142,11 @@ bad_operands_2:
 	output "Stack underflow---expected at least 2 elements\n"
 	goto waiting
 
-# always link with r3, return value is top of callstack r2
+//
+// Counts the number of elements in the stack
+//
 has:
 	push r3 on stack r2
-	# counter, starts at 1 because we know we just
-	# pushed something on the stack
 	r4 := 0
 	has_loop:
 		r3 := valuestack - r4
@@ -122,17 +157,13 @@ has:
 		pop r3 off stack r2
 		push r4 on stack r2 #return value
 		goto r3
-
-multiply:
-	goto has linking r3
-	pop r4 off stack r2
-	if (r4 == 1) goto bad_operands_2
-	pop r3 off stack r1
-	pop r4 off stack r1
-	r3 := r3 * r4
+//
+// Used by most the math functions as a general purpose way to return control
+// to waiting
+//
+done_operation:
 	push r3 on stack r1
 	goto waiting
-
 
 add:
 	goto has linking r3
@@ -141,8 +172,7 @@ add:
 	pop r3 off stack r1
 	pop r4 off stack r1
 	r3 := r3 + r4
-	push r3 on stack r1
-	goto waiting
+	goto done_operation
 
 subtract:
 	goto has linking r3
@@ -150,19 +180,69 @@ subtract:
 	if (r4 == 1) goto bad_operands_2
 	pop r3 off stack r1
 	pop r4 off stack r1
-	r3 := r3 - r4
-	push r3 on stack r1
-	goto waiting
+	r3 := r4 - r3
+	goto done_operation
 
+multiply:
+	goto has linking r3
+	pop r4 off stack r2
+	if (r4 == 1) goto bad_operands_2
+	pop r3 off stack r1
+	pop r4 off stack r1
+	r3 := r3 * r4
+	goto done_operation
+//
+// Division is handled by the following 4 functions
+//
 divide:
 	goto has linking r3
 	pop r4 off stack r2
 	if (r4 == 1) goto bad_operands_2
 	pop r3 off stack r1
 	pop r4 off stack r1
+	if (r3 == 0) goto division_by_zero
+	if (r4 <s 0) goto check_divisor
+	if (r3 <s 0) goto signed_divide_one_neg
+	goto unsigned_divide
+	check_divisor:
+		if (r3 <s 0) goto signed_divide_both_neg
+		goto signed_divide_one_neg
+	unsigned_divide:
 	r3 := r4 / r3
+	goto done_operation
+
+division_by_zero:
+	output "Division by zero\n"
+	push r4 on stack r1
 	push r3 on stack r1
 	goto waiting
+
+signed_divide_both_neg:
+	if (r4 >s 0) goto done_flipping_both_neg_1
+	r4 := r4 - 1
+	r4 := r4 nand r4
+	done_flipping_both_neg_1:
+	if (r3 >s 0) goto done_flipping_both_neg_2
+	r3 := r3 - 1
+	r3 := r3 nand r3
+	done_flipping_both_neg_2:
+	r3 := r4 / r3
+	goto done_operation
+
+
+signed_divide_one_neg:
+	if (r4 >s 0) goto done_flipping_one_neg_1
+	r4 := r4 - 1
+	r4 := r4 nand r4
+	done_flipping_one_neg_1:
+	if (r3 >s 0) goto done_flipping_one_neg_2
+	r3 := r3 - 1
+	r3 := r3 nand r3
+	done_flipping_one_neg_2:
+	r3 := r4 / r3
+	r3 := r3 nand r3
+	r3 := r3 + 1
+	goto done_operation
 
 bitwise_or:
 	goto has linking r3
@@ -171,8 +251,7 @@ bitwise_or:
 	pop r3 off stack r1
 	pop r4 off stack r1
 	r3 := r3 | r4
-	push r3 on stack r1
-	goto waiting
+	goto done_operation
 
 bitwise_and:
 	goto has linking r3
@@ -181,8 +260,7 @@ bitwise_and:
 	pop r3 off stack r1
 	pop r4 off stack r1
 	r3 := r3 & r4
-	push r3 on stack r1
-	goto waiting
+	goto done_operation
 
 negation:
 	goto has linking r3
@@ -191,15 +269,44 @@ negation:
 	pop r3 off stack r1
 	r3 := r3 nand r3
 	r3 := r3 + 1
-	push r3 on stack r1
-	goto waiting
+	goto done_operation
 
 complement:
+	goto has linking r3
+	pop r4 off stack r2
+	if (r4 == 0) goto bad_operands_1
+	pop r3 off stack r1
+	r3 := r3 nand r3
+	goto done_operation
 
 swap:
+	goto has linking r3
+	pop r4 off stack r2
+	if (r4 == 1) goto bad_operands_2
+	pop r3 off stack r1
+	pop r4 off stack r1
+	push r3 on stack r1
+	push r4 on stack r1
+	goto waiting
 
 duplicate:
+	goto has linking r3
+	pop r4 off stack r2
+	if (r4 == 0) goto bad_operands_1
+	pop r3 off stack r1
+	r4 := r3
+	push r4 on stack r1
+	goto done_operation
 
 pop_val:
+	goto has linking r3
+	pop r4 off stack r2
+	if (r4 == 0) goto bad_operands_1
+	pop stack r1
+	goto waiting
 
 pop_all:
+	pop_loop:
+	if (r1 == valuestack) goto waiting
+	pop stack r1
+	goto pop_loop
