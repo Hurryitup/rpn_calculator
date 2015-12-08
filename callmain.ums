@@ -29,10 +29,10 @@
 // Sets the labels of the stacks, calls main
 //
 ustart:
-	r0 := 0
-	r2 := endstack
-	r1 := valuestack
-	goto main 
+        r0 := 0
+        r2 := endstack
+        r1 := valuestack
+        goto main 
 
 
 //
@@ -40,6 +40,7 @@ ustart:
 //
 .section main
 .zero r0
+
 main:
-	.temp r6, r7
-	goto run
+        .temp r6, r7
+        goto run
