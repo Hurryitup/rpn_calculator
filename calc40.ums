@@ -45,12 +45,7 @@ run:
 	goto waiting
 
 end:
-	output "halting"
 	halt
-
-print_stack:
-	output "printing"
-	goto waiting
 
 waiting:
 	r3 := input()
@@ -66,14 +61,38 @@ waiting_with_character:
 
 entering:
 	r3 := input()
-	if (r3 <s '0') goto waiting_with_character
-	if (r3 >s '9') goto waiting_with_character
 	if (r3 == '+') goto add
+	if (r3 == '-') goto subtract
+	if (r3 == '/') goto divide
+	if (r3 == '*') goto multiply
+	if (r3 == '|') goto bitwise_or
+	if (r3 == 'c') goto negation
+	if (r3 == '&') goto bitwise_and
+	if (r3 == '0') goto multi_digit
+	if (r3 == '1') goto multi_digit
+	if (r3 == '2') goto multi_digit
+	if (r3 == '3') goto multi_digit
+	if (r3 == '4') goto multi_digit
+	if (r3 == '5') goto multi_digit
+	if (r3 == '6') goto multi_digit
+	if (r3 == '7') goto multi_digit
+	if (r3 == '8') goto multi_digit
+	if (r3 == '9') goto multi_digit
+	if (r3 <s '0') goto waiting_with_character	
+	if (r3 >s '9') goto waiting_with_character
 	goto entering
 	
 digit:
 	r3 := r3 - '0'
 	push r3 on stack r1
+	goto entering
+
+multi_digit:
+	pop r4 off stack r1
+	r3 := r3 - '0'
+	r4 := r4 * 10
+	r4 := r4 + r3
+	push r4 on stack r1
 	goto entering
 
 input_error:
@@ -98,23 +117,27 @@ has:
 		r3 := valuestack - r4
 		if(r3 == r1) goto return_has
 		r4 := r4 + 1
-		output "stuck in loop\n" 
 		goto has_loop
 	return_has:
 		pop r3 off stack r2
 		push r4 on stack r2 #return value
-		output "ending has\n"
 		goto r3
 
 multiply:
-
-
-add:
-	output "adding\n"
 	goto has linking r3
 	pop r4 off stack r2
 	if (r4 == 1) goto bad_operands_2
-	output "past check\n"
+	pop r3 off stack r1
+	pop r4 off stack r1
+	r3 := r3 * r4
+	push r3 on stack r1
+	goto waiting
+
+
+add:
+	goto has linking r3
+	pop r4 off stack r2
+	if (r4 == 1) goto bad_operands_2
 	pop r3 off stack r1
 	pop r4 off stack r1
 	r3 := r3 + r4
@@ -122,14 +145,54 @@ add:
 	goto waiting
 
 subtract:
+	goto has linking r3
+	pop r4 off stack r2
+	if (r4 == 1) goto bad_operands_2
+	pop r3 off stack r1
+	pop r4 off stack r1
+	r3 := r3 - r4
+	push r3 on stack r1
+	goto waiting
 
 divide:
+	goto has linking r3
+	pop r4 off stack r2
+	if (r4 == 1) goto bad_operands_2
+	pop r3 off stack r1
+	pop r4 off stack r1
+	r3 := r4 / r3
+	push r3 on stack r1
+	goto waiting
 
 bitwise_or:
+	goto has linking r3
+	pop r4 off stack r2
+	if (r4 == 1) goto bad_operands_2
+	pop r3 off stack r1
+	pop r4 off stack r1
+	r3 := r3 | r4
+	push r3 on stack r1
+	goto waiting
 
 bitwise_and:
+	goto has linking r3
+	pop r4 off stack r2
+	if (r4 == 1) goto bad_operands_2
+	pop r3 off stack r1
+	pop r4 off stack r1
+	r3 := r3 & r4
+	push r3 on stack r1
+	goto waiting
 
 negation:
+	goto has linking r3
+	pop r4 off stack r2
+	if (r4 == 0) goto bad_operands_1
+	pop r3 off stack r1
+	r3 := r3 nand r3
+	r3 := r3 + 1
+	push r3 on stack r1
+	goto waiting
 
 complement:
 
