@@ -1,312 +1,480 @@
+//
+//      Aditya Hurry and Aristana Scourtas
+//      Project 8: RPN Calculator
+//      12/8/2015
+//      calc40.ums
+//
+
+//---------------------------------------------------------------------------//
+#                                                                             #
+#                       Jump table initialization                             #
+#                                                                             #
+//---------------------------------------------------------------------------//
+#                                                                             #
+#       Register use:                                                         #
+#               r0 is always 0                                                #
+#               r1 always points to the top of the value stack                #
+#               r2 always points to the top of the call stack                 #
+#               r5, r6, and r7 are used as temporary registers                #
+#               Individual blocks' register use is documented below           #
+#                                                                             #
+//---------------------------------------------------------------------------//
+
 .section init
 .temps r5, r6, r7
 
-//---------------------------------------------------------------------------//
-#									      #
-#			Jump table initialization			      #
-#									      #
-//---------------------------------------------------------------------------//
-
+//
+// Allocates space for the jumptable
+//
 jumptable:
-	.space 256
+        .space 256
 
+//
+// Initializes the jump table so that all entries point to the input_error
+// block
+// Register r4 always points to the current index of the jump table being
+// initialized
+// Control cascades into the space_init block
+//
 table:
-	r4 := jumptable
-	table_loop:
-		m[r0][r4] := input_error
-		r4 := r4 + 1
-		if(r4 != jumptable+255) goto table_loop
+        r4 := jumptable
+        table_loop:
+                m[r0][r4] := input_error
+                r4 := r4 + 1
+                if(r4 != jumptable+255) goto table_loop
 
+//
+// Initializes the jumptable index associated with the ' ' character
+// Control cascades into the operands_init block
+//
 space_init:
-	r4 := jumptable + ' '
-	m[r0][r4] := waiting
+        r4 := jumptable + ' '
+        m[r0][r4] := waiting
 
+//
+// Initializes the jump table indices associated with the legal operators
+// Each index points to the appropriate operator-block
+// Control cascades into the number_init block
+//
 operands_init:
-	m[r0][jumptable + '*'] := multiply
-	m[r0][jumptable + '+'] := add
-	m[r0][jumptable + '-'] := subtract
-	m[r0][jumptable + '/'] := divide
-	m[r0][jumptable + '|'] := bitwise_or
-	m[r0][jumptable + '&'] := bitwise_and
-	m[r0][jumptable + 'c'] := negation
-	m[r0][jumptable + '~'] := complement
-	m[r0][jumptable + 's'] := swap
-	m[r0][jumptable + 'd'] := duplicate
-	m[r0][jumptable + 'p'] := pop_val
-	m[r0][jumptable + 'z'] := pop_all
+        m[r0][jumptable + '*'] := multiply
+        m[r0][jumptable + '+'] := add
+        m[r0][jumptable + '-'] := subtract
+        m[r0][jumptable + '/'] := divide
+        m[r0][jumptable + '|'] := bitwise_or
+        m[r0][jumptable + '&'] := bitwise_and
+        m[r0][jumptable + 'c'] := negation
+        m[r0][jumptable + '~'] := complement
+        m[r0][jumptable + 's'] := swap
+        m[r0][jumptable + 'd'] := duplicate
+        m[r0][jumptable + 'p'] := pop_val
+        m[r0][jumptable + 'z'] := pop_all
+        m[r0][jumptable + '\n'] := print_stack
 
+//
+// Initializes all the jump table indices associated with each digit to point
+// to the digit block
+// transfers control to the ustart block in callmain.ums
+//
 number_init:
-	r4 := jumptable + '0'
-	number_init_loop:
-		m[r0][r4] := digit
-		r4 := r4 + 1
-		if(r4 != jumptable + ':') goto number_init_loop
-	goto ustart
+        r4 := jumptable + '0'
+        number_init_loop:
+                m[r0][r4] := digit
+                r4 := r4 + 1
+                if(r4 != jumptable + ':') goto number_init_loop
+        goto ustart
 
 //---------------------------------------------------------------------------//
-#									      #
-#				Input handling				      #
-#									      #
+#                                                                             #
+#                               Input handling                                #
+#                                                                             #
+//---------------------------------------------------------------------------//
+#                                                                             #
+#       Register use:                                                         #
+#               r0 is always 0                                                #
+#               r1 always points to the top of the value stack                #
+#               r2 always points to the top of the call stack                 #
+#               r5, r6, and r7 are used as temporary registers                #
+#               r3 holds the input received from stdout                       #
+#               Individual blocks' register use is documented below           #
+#                                                                             #
 //---------------------------------------------------------------------------//
 
 .section main
 .temps r5, r6, r7
 .zero r0
 
+//
+// Recieves control from ustart, transfers control to waiting
+//
 run:
-	goto waiting
-
-end:
-	halt
-
-waiting:
-	r3 := input()
-
-waiting_with_character:
-	# -1 is EOF
-	if(r3 == -1) goto end
-	if(r3 == '\n') goto print_stack
-	# goes to corresponding instruction in the jump table
-	r4 := jumptable + r3
-	r4 := m[r0][r4]
-	goto r4
-
-entering:
-	r3 := input()
-	if (r3 == '+') goto add
-	if (r3 == '-') goto subtract
-	if (r3 == '/') goto divide
-	if (r3 == '*') goto multiply
-	if (r3 == '|') goto bitwise_or
-	if (r3 == 'c') goto negation
-	if (r3 == 's') goto swap
-	if (r3 == '~') goto complement
-	if (r3 == 'd') goto duplicate
-	if (r3 == 'p') goto pop_val
-	if (r3 == 'z') goto pop_all
-	if (r3 == '&') goto bitwise_and
-	if (r3 == '0') goto multi_digit
-	if (r3 == '1') goto multi_digit
-	if (r3 == '2') goto multi_digit
-	if (r3 == '3') goto multi_digit
-	if (r3 == '4') goto multi_digit
-	if (r3 == '5') goto multi_digit
-	if (r3 == '6') goto multi_digit
-	if (r3 == '7') goto multi_digit
-	if (r3 == '8') goto multi_digit
-	if (r3 == '9') goto multi_digit
-	if (r3 <s '0') goto waiting_with_character	
-	if (r3 >s '9') goto waiting_with_character
-	goto entering
-	
-digit:
-	r3 := r3 - '0'
-	push r3 on stack r1
-	goto entering
-
-multi_digit:
-	pop r4 off stack r1
-	r3 := r3 - '0'
-	r4 := r4 * 10
-	r4 := r4 + r3
-	push r4 on stack r1
-	goto entering
-
-input_error:
-	output "Unknown character '"
-	output r3
-	output "'\n"
-	goto waiting
-
-//---------------------------------------------------------------------------//
-#									      #
-#		   Math functions and related error handling		      #
-#									      #
-//---------------------------------------------------------------------------//
-#
-#	Register use:
-#		For the 'has' label, r4 holds the return value
-#		For binary operators, r3 and r4 hold the operands
-#		For unary operators, r3 holds the operand
-#	
-#
-//---------------------------------------------------------------------------//
-
-
-
-bad_operands_1:
-	output "Stack underflow---expected at least 1 element\n"
-	goto waiting
-
-bad_operands_2:
-	output "Stack underflow---expected at least 2 elements\n"
-	goto waiting
+        goto waiting
 
 //
-// Counts the number of elements in the stack
+// Issues a halt instruction, ending the program        
+//
+end:
+        halt
+
+//
+// Waits for input on stdin. When input arrives, puts it into register r3
+//
+waiting:
+        r3 := input()
+
+//
+// Checks for whether input was the end of file. If it is, transfer control
+// to the end block
+// Assigns r4 to the jumptable index associated with the given input
+// Transfers control to the block pointed to by r4
+//
+waiting_with_character:
+        # -1 is EOF
+        if(r3 == -1) goto end
+        # goes to corresponding instruction in the jump table
+        r4 := jumptable + r3
+        r4 := m[r0][r4]
+        goto r4
+
+//
+// Accepts input and assigns it to register r3. Then transfers control to the
+// associated block. If input doesn't match any operand, or digit, transfers 
+// control to waiting_with_character
+//
+entering:
+        r3 := input()
+        if (r3 == '+') goto add
+        if (r3 == '-') goto subtract
+        if (r3 == '/') goto divide
+        if (r3 == '*') goto multiply
+        if (r3 == '|') goto bitwise_or
+        if (r3 == 'c') goto negation
+        if (r3 == 's') goto swap
+        if (r3 == '~') goto complement
+        if (r3 == 'd') goto duplicate
+        if (r3 == 'p') goto pop_val
+        if (r3 == 'z') goto pop_all
+        if (r3 == '&') goto bitwise_and
+        if (r3 == '0') goto multi_digit
+        if (r3 == '1') goto multi_digit
+        if (r3 == '2') goto multi_digit
+        if (r3 == '3') goto multi_digit
+        if (r3 == '4') goto multi_digit
+        if (r3 == '5') goto multi_digit
+        if (r3 == '6') goto multi_digit
+        if (r3 == '7') goto multi_digit
+        if (r3 == '8') goto multi_digit
+        if (r3 == '9') goto multi_digit
+        if (r3 <s '0') goto waiting_with_character
+        if (r3 >s '9') goto waiting_with_character
+
+//
+// If input is a digit, pushes it onto the value stack pointed to by r1
+// Transfers control to entering
+//      
+digit:
+        r3 := r3 - '0' # Accomodates for ASCII coding for calculations
+        push r3 on stack r1
+        goto entering
+
+//
+// If digits are entered consecutively, control gets transferred here.
+// Pops the top value off the value stack into r4. Multiplies it by 10
+// and adds the value in r3 to it, thus forming creating a multi digit number
+// Then pushes the r4 onto the value stack
+//
+multi_digit:
+        pop r4 off stack r1
+        r3 := r3 - '0'
+        r4 := r4 * 10
+        r4 := r4 + r3
+        push r4 on stack r1
+        goto entering
+
+//
+// If the input is not an accepted character, prints an error message and
+// transfers control to the waiting block
+//
+input_error:
+        output "Unknown character '"
+        output r3
+        output "'\n"
+        goto waiting
+
+//---------------------------------------------------------------------------//
+#                                                                             #
+#                  Math functions and related error handling                  #
+#                                                                             #
+//---------------------------------------------------------------------------//
+#                                                                             #
+#       Register use:                                                         #
+#               r0 is always 0                                                #
+#               r5, r6, and r7 are used as temporary registers                #
+#               For the 'has' label, r4 holds the return value                #
+#               For binary operators, r3 and r4 hold the operands             #
+#               For unary operators, r3 holds the operand                     #
+#                                                                             #
+//---------------------------------------------------------------------------//
+
+.section math
+.temps r5, r6, r7
+.zero r0
+
+//
+// Outputs the error message for unary operators and goes to the waiting state
+//
+bad_operands_1:
+        output "Stack underflow---expected at least 1 element\n"
+        goto waiting
+
+//
+// Outputs the error message for unary operators and goes to the waiting state
+//
+bad_operands_2:
+        output "Stack underflow---expected at least 2 elements\n"
+        goto waiting
+
+//
+// Counts the number of elements in the stack.
+// Uses r4 as a counter, and pushes it on the stack before returning in order
+// for the calling block to access it as a return value.
+// Returns control to the caller using the goto-linking construct
 //
 has:
-	push r3 on stack r2
-	r4 := 0
-	has_loop:
-		r3 := valuestack - r4
-		if(r3 == r1) goto return_has
-		r4 := r4 + 1
-		goto has_loop
-	return_has:
-		pop r3 off stack r2
-		push r4 on stack r2 #return value
-		goto r3
+        push r3 on stack r2
+        r4 := 0
+        has_loop:
+                r3 := valuestack - r4
+                if(r3 == r1) goto return_has
+                r4 := r4 + 1
+                goto has_loop
+        return_has:
+                pop r3 off stack r2
+                push r4 on stack r2 #return value
+                goto r3
 //
-// Used by most the math functions as a general purpose way to return control
-// to waiting
+// Used by most the math functions as a general purpose way to push the result
+// of an operation  onto the value stack and returns control to waiting.
+// Pushes r3 (the register holding the result) onto the value stack, then goes
+// to waiting block
 //
 done_operation:
-	push r3 on stack r1
-	goto waiting
+        push r3 on stack r1
+        goto waiting
 
-add:
-	goto has linking r3
-	pop r4 off stack r2
-	if (r4 == 1) goto bad_operands_2
-	pop r3 off stack r1
-	pop r4 off stack r1
-	r3 := r3 + r4
-	goto done_operation
 
-subtract:
-	goto has linking r3
-	pop r4 off stack r2
-	if (r4 == 1) goto bad_operands_2
-	pop r3 off stack r1
-	pop r4 off stack r1
-	r3 := r4 - r3
-	goto done_operation
-
-multiply:
-	goto has linking r3
-	pop r4 off stack r2
-	if (r4 == 1) goto bad_operands_2
-	pop r3 off stack r1
-	pop r4 off stack r1
-	r3 := r3 * r4
-	goto done_operation
 //
-// Division is handled by the following 4 functions
+// Pops the top two values on the stack into r3 and r4, adds them and assigns
+// the result to r3, then transfers control to the done_operation block
+//
+add:
+        goto has linking r3
+        pop r4 off stack r2
+        if (r4 == 1) goto bad_operands_2
+        pop r3 off stack r1
+        pop r4 off stack r1
+        r3 := r3 + r4
+        goto done_operation
+
+//
+// Pops the top two values on the stack into r3 and r4, subtracts r3 from r4
+// and assigns the result to r3, then transfers control to the done_operation
+// block
+//
+subtract:
+        goto has linking r3
+        pop r4 off stack r2
+        if (r4 == 1) goto bad_operands_2
+        pop r3 off stack r1
+        pop r4 off stack r1
+        r3 := r4 - r3
+        goto done_operation
+
+//
+// Pops the two values on the stack into r3 and r4, multiplies them and assigns
+// the result to r3, then transfers control to the done_operation block
+//
+multiply:
+        goto has linking r3
+        pop r4 off stack r2
+        if (r4 == 1) goto bad_operands_2
+        pop r3 off stack r1
+        pop r4 off stack r1
+        r3 := r3 * r4
+        goto done_operation
+
+//
+// Pops the two values on the stack into r3 and r4. If the divisor is zero,
+// transfers control to the division_by_zero block
+// Then checks for whether either operand was negative. If either was 
+// negative, transfers control to the signed_divide_one_neg block
+// If both are negative, transfers control to the signed_divide_both_neg block
+// If both operands are positive, divides r4 by r3 and assigns the result to r3
+// then transfers control to the done_operation block
 //
 divide:
-	goto has linking r3
-	pop r4 off stack r2
-	if (r4 == 1) goto bad_operands_2
-	pop r3 off stack r1
-	pop r4 off stack r1
-	if (r3 == 0) goto division_by_zero
-	if (r4 <s 0) goto check_divisor
-	if (r3 <s 0) goto signed_divide_one_neg
-	goto unsigned_divide
-	check_divisor:
-		if (r3 <s 0) goto signed_divide_both_neg
-		goto signed_divide_one_neg
-	unsigned_divide:
-	r3 := r4 / r3
-	goto done_operation
+        goto has linking r3
+        pop r4 off stack r2
+        if (r4 == 1) goto bad_operands_2
+        pop r3 off stack r1
+        pop r4 off stack r1
+        if (r3 == 0) goto division_by_zero
+        if (r4 <s 0) goto check_divisor
+        if (r3 <s 0) goto signed_divide_one_neg
+        goto unsigned_divide
+        check_divisor:
+                if (r3 <s 0) goto signed_divide_both_neg
+                goto signed_divide_one_neg
+        unsigned_divide:
+        r3 := r4 / r3
+        goto done_operation
 
+//
+// Handles the error of division by zero. Outputs an error message, and pops
+// the two operands back on the stack. Transfers control to the waiting block
+//
 division_by_zero:
-	output "Division by zero\n"
-	push r4 on stack r1
-	push r3 on stack r1
-	goto waiting
+        output "Division by zero\n"
+        push r4 on stack r1
+        push r3 on stack r1
+        goto waiting
 
+//
+// Handles the case of both operands of a division being negative numbers.
+// Flips both operands' signs, performs the division, and assigns the result to
+// r3 then transfers control to the done_operation block
+//
 signed_divide_both_neg:
-	if (r4 >s 0) goto done_flipping_both_neg_1
-	r4 := r4 - 1
-	r4 := r4 nand r4
-	done_flipping_both_neg_1:
-	if (r3 >s 0) goto done_flipping_both_neg_2
-	r3 := r3 - 1
-	r3 := r3 nand r3
-	done_flipping_both_neg_2:
-	r3 := r4 / r3
-	goto done_operation
+        if (r4 >s 0) goto done_flipping_both_neg_1
+        r4 := r4 - 1
+        r4 := r4 nand r4
+        done_flipping_both_neg_1:
+        if (r3 >s 0) goto done_flipping_both_neg_2
+        r3 := r3 - 1
+        r3 := r3 nand r3
+        done_flipping_both_neg_2:
+        r3 := r4 / r3
+        goto done_operation
 
-
+//
+// Handles the case wherein either of the operands are negative. Flips the sign
+// of the negative operand, divides r4 by r3 and assigns the result to r3
+// and then transfers control to the done_operation block
+//
 signed_divide_one_neg:
-	if (r4 >s 0) goto done_flipping_one_neg_1
-	r4 := r4 - 1
-	r4 := r4 nand r4
-	done_flipping_one_neg_1:
-	if (r3 >s 0) goto done_flipping_one_neg_2
-	r3 := r3 - 1
-	r3 := r3 nand r3
-	done_flipping_one_neg_2:
-	r3 := r4 / r3
-	r3 := r3 nand r3
-	r3 := r3 + 1
-	goto done_operation
+        if (r4 >s 0) goto done_flipping_one_neg_1
+        r4 := r4 - 1
+        r4 := r4 nand r4
+        done_flipping_one_neg_1:
+        if (r3 >s 0) goto done_flipping_one_neg_2
+        r3 := r3 - 1
+        r3 := r3 nand r3
+        done_flipping_one_neg_2:
+        r3 := r4 / r3
+        r3 := r3 nand r3
+        r3 := r3 + 1
+        goto done_operation
+
+//
+// Pops the two values on the stack into r3 and r4, performs a bitwise-or on
+// them and assigns the result to r3, then transfers control to the
+// done_operation block
+//
 
 bitwise_or:
-	goto has linking r3
-	pop r4 off stack r2
-	if (r4 == 1) goto bad_operands_2
-	pop r3 off stack r1
-	pop r4 off stack r1
-	r3 := r3 | r4
-	goto done_operation
+        goto has linking r3
+        pop r4 off stack r2
+        if (r4 == 1) goto bad_operands_2
+        pop r3 off stack r1
+        pop r4 off stack r1
+        r3 := r3 | r4
+        goto done_operation
 
+//
+// Pops the two values on the stack into r3 and r4, performs a bitwise-and on
+// them and assigns the result to r3, then transfers control to the
+// done_operation block
+//
 bitwise_and:
-	goto has linking r3
-	pop r4 off stack r2
-	if (r4 == 1) goto bad_operands_2
-	pop r3 off stack r1
-	pop r4 off stack r1
-	r3 := r3 & r4
-	goto done_operation
+        goto has linking r3
+        pop r4 off stack r2
+        if (r4 == 1) goto bad_operands_2
+        pop r3 off stack r1
+        pop r4 off stack r1
+        r3 := r3 & r4
+        goto done_operation
 
+//
+// Pops the top value on the stack into r3 and nands it with itself, then adds
+// one to it, completing the conversion to two's complement and then assigns
+// the result to r3, then transfers control to the done_operation block
+//
 negation:
-	goto has linking r3
-	pop r4 off stack r2
-	if (r4 == 0) goto bad_operands_1
-	pop r3 off stack r1
-	r3 := r3 nand r3
-	r3 := r3 + 1
-	goto done_operation
+        goto has linking r3
+        pop r4 off stack r2
+        if (r4 == 0) goto bad_operands_1
+        pop r3 off stack r1
+        r3 := r3 nand r3
+        r3 := r3 + 1
+        goto done_operation
 
+//
+// Pops the top value on the stack into r3 and nands it with itself, assigning
+// the result to r3, then transfers control to the done_operation block
+//
 complement:
-	goto has linking r3
-	pop r4 off stack r2
-	if (r4 == 0) goto bad_operands_1
-	pop r3 off stack r1
-	r3 := r3 nand r3
-	goto done_operation
+        goto has linking r3
+        pop r4 off stack r2
+        if (r4 == 0) goto bad_operands_1
+        pop r3 off stack r1
+        r3 := r3 nand r3
+        goto done_operation
 
+//
+// Pops the top two values on the stack into r3 and r4 and then pushes them
+// back on the stack in the reverse order, thus swapping them.
+// Then transfers control to the waiting block
+//
 swap:
-	goto has linking r3
-	pop r4 off stack r2
-	if (r4 == 1) goto bad_operands_2
-	pop r3 off stack r1
-	pop r4 off stack r1
-	push r3 on stack r1
-	push r4 on stack r1
-	goto waiting
+        goto has linking r3
+        pop r4 off stack r2
+        if (r4 == 1) goto bad_operands_2
+        pop r3 off stack r1
+        pop r4 off stack r1
+        push r3 on stack r1
+        push r4 on stack r1
+        goto waiting
 
+//
+// Pops the top value on the stack into r3 and assigns it to r4. Then pushes r4
+// onto the value stack, and transfers control to done_operation
+//
 duplicate:
-	goto has linking r3
-	pop r4 off stack r2
-	if (r4 == 0) goto bad_operands_1
-	pop r3 off stack r1
-	r4 := r3
-	push r4 on stack r1
-	goto done_operation
+        goto has linking r3
+        pop r4 off stack r2
+        if (r4 == 0) goto bad_operands_1
+        pop r3 off stack r1
+        r4 := r3
+        push r4 on stack r1
+        goto done_operation
 
+//
+// Pops one value off the stack and transfers control to the waiting block
+//
 pop_val:
-	goto has linking r3
-	pop r4 off stack r2
-	if (r4 == 0) goto bad_operands_1
-	pop stack r1
-	goto waiting
+        goto has linking r3
+        pop r4 off stack r2
+        if (r4 == 0) goto bad_operands_1
+        pop stack r1
+        goto waiting
 
+//
+// Loops through the value stack and pops everything off until r1 (the value
+// stack pointer) points to the bottom of the value stack.
+// When complete, transfers control to waiting
+//
 pop_all:
-	pop_loop:
-	if (r1 == valuestack) goto waiting
-	pop stack r1
-	goto pop_loop
+        pop_loop:
+        if (r1 == valuestack) goto waiting
+        pop stack r1
+        goto pop_loop
